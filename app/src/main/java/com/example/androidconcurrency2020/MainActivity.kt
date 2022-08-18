@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.androidconcurrency2020.databinding.ActivityMainBinding
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,26 +32,14 @@ class MainActivity : AppCompatActivity() {
      * Run some code
      */
     private fun runCode() {
-        val runnable = object: Runnable {
-            override fun run() {
-                log("Operation from runnable without lambda")
+        thread(start = true, isDaemon = true) {
+            for (i in 1..10) {
+                Log.i(LOG_TAG, "Looping $i")
+                Thread.sleep(1000)
             }
+
+            Log.i(LOG_TAG, "All done!")
         }
-
-        val handler = Handler()
-        handler.post(runnable)
-
-        Handler().post { log("Operation from runnable with lambda") }
-
-        Handler().postDelayed({ log("Operation from runnable 1") }, 3000)
-        Handler().postDelayed({ log("Operation from runnable 2") }, 2000)
-        Handler().postDelayed({ log("Operation from runnable 3") }, 1000)
-
-        Handler().postAtTime({ log("Operation from runnable 4") }, SystemClock.uptimeMillis() + 4000)
-
-        log("Synchronous operation 1")
-        log("Synchronous operation 2")
-        log("Synchronous operation 3")
     }
 
     /**
