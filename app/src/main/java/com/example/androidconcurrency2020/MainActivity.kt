@@ -1,23 +1,37 @@
 package com.example.androidconcurrency2020
 
-import android.os.*
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.util.Log
-import android.widget.ScrollView
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.androidconcurrency2020.databinding.ActivityMainBinding
 import kotlin.concurrent.thread
+import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var imageViews: Array<ImageView>
+
+    private val drawables = arrayOf(
+        R.drawable.die_1, R.drawable.die_2,
+        R.drawable.die_3, R.drawable.die_4,
+        R.drawable.die_5, R.drawable.die_6
+    )
 
     private val handler = object: Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
 
             val bundle = msg.data
-            val message = bundle?.getString(MESSAGE_KEY)
-            log(message ?: "message was null")
+            val dieIndex = bundle?.getInt(DIE_INDEX_KEY) ?: 0
+            val dieValue = bundle?.getInt(DIE_VALUE_KEY) ?: 1
+
+            Log.i(LOG_TAG, "index = $dieIndex, value = $dieValue")
+            imageViews[dieIndex].setImageResource(drawables[dieValue])
         }
     }
 
@@ -28,62 +42,33 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize button click handlers
-        with(binding) {
-            runButton.setOnClickListener { runCode() }
-            clearButton.setOnClickListener { clearOutput() }
-        }
-
+        imageViews = arrayOf(binding.die1, binding.die2, binding.die3, binding.die4, binding.die5)
+        binding.rollButton.setOnClickListener { rollTheDice() }
     }
 
-    /**
-     * Run some code
-     */
-    private fun runCode() {
-        thread(start = true) {
-            val bundle = Bundle()
+    private fun rollTheDice() {
+        for (dieIndex in imageViews.indices) {
+            thread(start = true) {
+                Thread.sleep(dieIndex * 10L)
 
-            for (i in 1..10) {
-                sendMessageToHandler(bundle, "Looping $i")
-                Thread.sleep(500)
+                val bundle = Bundle()
+                bundle.putInt(DIE_INDEX_KEY, dieIndex)
+
+                for (i in 1..10) {
+                    bundle.putInt(DIE_VALUE_KEY, getDieValue())
+
+                    Message().also {
+                        it.data = bundle
+                        handler.sendMessage(it)
+                    }
+
+                    Thread.sleep(150)
+                }
             }
-
-            sendMessageToHandler(bundle, "All done!")
         }
     }
 
-    private fun sendMessageToHandler(bundle: Bundle, message: String) {
-        bundle.putString(MESSAGE_KEY, message)
-
-        Message().also {
-            it.data = bundle
-            handler.sendMessage(it)
-        }
+    private fun getDieValue(): Int {
+        return Random.nextInt(1, 6)
     }
-
-    /**
-     * Clear log display
-     */
-    private fun clearOutput() {
-        binding.logDisplay.text = ""
-        scrollTextToEnd()
-    }
-
-    /**
-     * Log output to logcat and the screen
-     */
-    @Suppress("SameParameterValue")
-    private fun log(message: String) {
-        Log.i(LOG_TAG, message)
-        binding.logDisplay.append(message + "\n")
-        scrollTextToEnd()
-    }
-
-    /**
-     * Scroll to end. Wrapped in post() function so it's the last thing to happen
-     */
-    private fun scrollTextToEnd() {
-        Handler().post { binding.scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
-    }
-
 }
