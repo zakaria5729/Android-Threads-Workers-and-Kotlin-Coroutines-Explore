@@ -24,10 +24,12 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        clearOutput()
+
         // Initialize button click handlers
         with(binding) {
             runButton.setOnClickListener { runCode() }
-            clearButton.setOnClickListener { clearOutput() }
+            clearButton.setOnClickListener { viewModel.cancelJob() }
         }
 
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
