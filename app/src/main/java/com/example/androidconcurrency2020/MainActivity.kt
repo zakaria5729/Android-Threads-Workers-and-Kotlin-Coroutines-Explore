@@ -3,6 +3,7 @@ package com.example.androidconcurrency2020
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.ResultReceiver
 import android.util.Log
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
@@ -31,8 +32,9 @@ class MainActivity : AppCompatActivity() {
      * Run some code
      */
     private fun runCode() {
-        Log.i(LOG_TAG, "\n\n")
-        MyJobIntentService.startActionFoo(this, "Param1", "Param2")
+        val handler = Handler(Looper.getMainLooper())
+        val myResultReceiver = MyResultReceiver(handler)
+        MyJobIntentService.startAction(this, FILE_URL, myResultReceiver)
     }
 
     /**
@@ -47,7 +49,7 @@ class MainActivity : AppCompatActivity() {
      * Log output to logcat and the screen
      */
     @Suppress("SameParameterValue")
-    private fun log(message: String) {
+    private fun logAndDisplay(message: String) {
         Log.i(LOG_TAG, message)
         binding.logDisplay.append(message + "\n")
         scrollTextToEnd()
@@ -60,4 +62,14 @@ class MainActivity : AppCompatActivity() {
         Handler(Looper.getMainLooper()).post { binding.scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 
+    inner class MyResultReceiver(handler: Handler) : ResultReceiver(handler) {
+        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+            super.onReceiveResult(resultCode, resultData)
+
+            if (resultCode == RECEIVER_RESULT_CODE) {
+                val contents = resultData?.getString(FILE_CONTENTS_KEY) ?: "Null"
+                logAndDisplay(contents)
+            }
+        }
+    }
 }
