@@ -2,19 +2,20 @@ package com.example.androidconcurrency2020
 
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import com.example.androidconcurrency2020.databinding.ActivityMainBinding
-import kotlinx.coroutines.*
-import java.net.URL
-import java.nio.charset.Charset
 
 const val fileUrl = "https://2833069.youcanlearnit.net/lorem_ipsum.txt"
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,16 +30,15 @@ class MainActivity : AppCompatActivity() {
             clearButton.setOnClickListener { clearOutput() }
         }
 
+        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        viewModel.myData.observe(this) { log(it) }
     }
 
     /**
      * Run some code
      */
     private fun runCode() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val result = fetchSomething()
-            log(result ?: "Null")
-        }
+        viewModel.doWork()
     }
 
     /**
@@ -63,16 +63,7 @@ class MainActivity : AppCompatActivity() {
      * Scroll to end. Wrapped in post() function so it's the last thing to happen
      */
     private fun scrollTextToEnd() {
-        Handler().post { binding.scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
-    }
-
-    private suspend fun fetchSomething(): String? {
-//        delay(2000)
-        log("Starting the request")
-        return withContext(Dispatchers.IO) {
-            val url = URL(fileUrl)
-            return@withContext url.readText(Charset.defaultCharset())
-        }
+        Handler(Looper.getMainLooper()).post { binding.scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 
 }
