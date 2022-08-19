@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun runCode() {
         Log.i(LOG_TAG, "\n\n")
-        MyIntentService.startActionFoo(this, "Param1", "Param2")
+        MyJobIntentService.startActionFoo(this, "Param1", "Param2")
     }
 
     /**
