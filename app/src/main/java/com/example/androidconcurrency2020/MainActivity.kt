@@ -7,6 +7,7 @@ import android.os.ResultReceiver
 import android.util.Log
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.work.*
 import com.example.androidconcurrency2020.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -25,16 +26,39 @@ class MainActivity : AppCompatActivity() {
             runButton.setOnClickListener { runCode() }
             clearButton.setOnClickListener { clearOutput() }
         }
-
     }
 
     /**
      * Run some code
      */
     private fun runCode() {
-        val handler = Handler(Looper.getMainLooper())
-        val myResultReceiver = MyResultReceiver(handler)
-        MyJobIntentService.startAction(this, FILE_URL, myResultReceiver)
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val inputData = Data.Builder()
+            .putString(FILE_URL_KEY, FILE_URL)
+            .build()
+
+        val oneTimeWorkRequest = OneTimeWorkRequestBuilder<MyWorker>()
+            .setConstraints(constraints)
+            .setInputData(inputData)
+            .build()
+
+        val workManager = WorkManager.getInstance(this)
+        workManager.enqueue(oneTimeWorkRequest)
+
+        workManager.getWorkInfoByIdLiveData(oneTimeWorkRequest.id).observe(this) {
+            when(it.state) {
+                WorkInfo.State.SUCCEEDED -> {
+                    val contents = it.outputData.getString(DATA_KEY) ?: "Null"
+                    logAndDisplay(contents)
+                }
+                else -> {
+                    logAndDisplay(it.state.name)
+                }
+            }
+        }
     }
 
     /**
@@ -60,16 +84,5 @@ class MainActivity : AppCompatActivity() {
      */
     private fun scrollTextToEnd() {
         Handler(Looper.getMainLooper()).post { binding.scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
-    }
-
-    inner class MyResultReceiver(handler: Handler) : ResultReceiver(handler) {
-        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-            super.onReceiveResult(resultCode, resultData)
-
-            if (resultCode == RECEIVER_RESULT_CODE) {
-                val contents = resultData?.getString(FILE_CONTENTS_KEY) ?: "Null"
-                logAndDisplay(contents)
-            }
-        }
     }
 }
